@@ -21,7 +21,7 @@ typedef struct _BST_Node bst_node;
 const size_t bst_size = sizeof(struct _BST);
 const size_t bst_node_size = sizeof(struct _BST_Node);
 
-typedef enum { LEFT = 0, RIGHT = 1} side_t;
+typedef enum { LEFT = 0, RIGHT, NONE} side_t;
 
 void bst_init(bst_t tree, size_t data_bytes, int (*compare_function)(void*, void*)) {
     memcpy(tree, (bst_t){NULL, 0, data_bytes, compare_function}, bst_size);
@@ -50,7 +50,67 @@ bst_node* bst_search_nearest_node(bst_t tree, void *value) {
 }
 
 
-side_t bst_node_side(bst_node* node);
+side_t bst_node_side(bst_node *node) {
+    if (node == NULL or node->parent == NULL)
+        return NONE;
+
+    if (node->parent->left_child == node)
+        return LEFT;
+    else
+        return RIGHT;
+}
+
+void left_rotate(bst_node *lower_node) {
+    if (lower_node == NULL)
+        return;
+    
+    bst_node *old_left_child = lower_node->left_child;
+    bst_node *old_parent = lower_node->parent;
+    bst_node *old_grandma = (old_parent != NULL) ? old_parent->parent : NULL;
+
+    if (old_parent != NULL) {
+        lower_node->left_child = old_parent;
+        old_parent->parent = lower_node;
+        
+        old_parent->right_child = old_left_child;
+        if (old_left_child != NULL)
+            old_left_child->parent = old_parent;
+        
+        lower_node->parent = old_grandma;
+        if (old_grandma != NULL) {
+            if (bst_node_side(old_parent) == LEFT)
+                old_grandma->left_child = lower_node;
+            else
+                old_grandma->right_child = lower_node;
+        }
+    }
+}
+
+void right_rotate(bst_node *lower_node) {
+    if (lower_node == NULL)
+        return;
+    
+    bst_node *old_right_child = lower_node->right_child;
+    bst_node *old_parent = lower_node->parent;
+    bst_node *old_grandma = (old_parent != NULL) ? old_parent->parent : NULL;
+
+    if (old_parent != NULL) {
+        lower_node->right_child = old_parent;
+        old_parent->parent = lower_node;
+        
+        old_parent->left_child = old_right_child;
+        if (old_right_child != NULL)
+            old_right_child->parent = old_parent;
+        
+        lower_node->parent = old_grandma;
+        if (old_grandma != NULL) {
+            if (bst_node_side(old_parent) == LEFT)
+                old_grandma->left_child = lower_node;
+            else
+                old_grandma->right_child = lower_node;
+        }
+    }
+}
 
 void bst_splay(bst_t tree, void *value) {
     if (tree == NULL or value == NULL)
