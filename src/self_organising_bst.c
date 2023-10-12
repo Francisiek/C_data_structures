@@ -2,28 +2,10 @@
 #include <string.h>
 #include <iso646.h>
 #include <stdbool.h>
+#include "../self_organising_bst.h"
 
-struct _BST_Node {
-    struct _BST_Node *parent;
-    struct _BST_Node *left_child, *right_child;
-    void *data;
-};
-
-struct _BST {
-    struct _BST_Node *root;
-    size_t number_of_nodes;
-    size_t data_container_bytes;
-    int (*compare_function)(void*, void*);
-};
-
-typedef int (*bst_compare_function)(void*, void*);
-typedef struct _BST bst_t[1];
-typedef struct _BST_Node bst_node;
-typedef bst_node* bst_node_ptr;
-const size_t bst_size = sizeof(struct _BST);
+const size_t bst_size = sizeof(struct _BST_Tree);
 const size_t bst_node_size = sizeof(struct _BST_Node);
-
-typedef enum { LEFT = -1, RIGHT = 1, NONE = 0} side_t;
 
 /* 
 compare_function:
@@ -40,40 +22,6 @@ The same value is not inserted multiple times.
 */
 void bst_init(bst_t tree, size_t data_bytes, int (*compare_side_function)(void *data, void *node_data)) {
     memcpy(tree, &(bst_t){{NULL, 0, data_bytes, compare_side_function}}, bst_size);
-}
-
-bst_node_ptr bst_insert(bst_t tree, void *data) {
-    if (tree == NULL or data == NULL)
-        return NULL;
-    
-    bst_node_ptr new_node = NULL;
-    bst_node_ptr nearest_node = bst_search_nearest_node(tree, data);
-    if (nearest_node == NULL) {
-        new_node = allocate_tree_node(NULL, data);
-        return (tree->root = new_node);
-    }
-    
-    side_t insertion_side = tree->compare_function(data, nearest_node->data);
-    if (insertion_side == NONE)
-        return nearest_node;
-    else if (insertion_side == LEFT)
-        new_node = nearest_node->left_child = allocate_tree_node(nearest_node, data);
-    else
-        new_node = nearest_node->right_child = allocate_tree_node(nearest_node, data);
-
-    return new_node;
-}
-
-bst_node_ptr allocate_tree_node(bst_node_ptr parent, void *data) {
-    bst_node_ptr new_node = malloc(bst_node_size);
-    if (new_node == NULL)
-        return NULL;
-    
-    new_node->data = data;
-    new_node->left_child = new_node->right_child = NULL;
-    new_node->parent = parent;
-
-    return new_node;
 }
 
 bst_node_ptr bst_search_nearest_node(bst_t tree, void *data) {
@@ -99,6 +47,39 @@ bst_node_ptr bst_search_nearest_node(bst_t tree, void *data) {
     return previous_node;
 }
 
+bst_node_ptr allocate_tree_node(bst_node_ptr parent, void *data) {
+    bst_node_ptr new_node = malloc(bst_node_size);
+    if (new_node == NULL)
+        return NULL;
+    
+    new_node->data = data;
+    new_node->left_child = new_node->right_child = NULL;
+    new_node->parent = parent;
+
+    return new_node;
+}
+
+bst_node_ptr bst_insert(bst_t tree, void *data) {
+    if (tree == NULL or data == NULL)
+        return NULL;
+    
+    bst_node_ptr new_node = NULL;
+    bst_node_ptr nearest_node = bst_search_nearest_node(tree, data);
+    if (nearest_node == NULL) {
+        new_node = allocate_tree_node(NULL, data);
+        return (tree->root = new_node);
+    }
+    
+    side_t insertion_side = tree->compare_function(data, nearest_node->data);
+    if (insertion_side == NONE)
+        return nearest_node;
+    else if (insertion_side == LEFT)
+        new_node = nearest_node->left_child = allocate_tree_node(nearest_node, data);
+    else
+        new_node = nearest_node->right_child = allocate_tree_node(nearest_node, data);
+
+    return new_node;
+}
 
 side_t bst_node_side(bst_node_ptr node) {
     if (node == NULL or node->parent == NULL)
@@ -112,7 +93,7 @@ side_t bst_node_side(bst_node_ptr node) {
         return NONE;
 }
 
-void left_rotate(bst_node_ptr lower_node) {
+static void left_rotate(bst_node_ptr lower_node) {
     if (lower_node == NULL)
         return;
     
@@ -138,7 +119,7 @@ void left_rotate(bst_node_ptr lower_node) {
     }
 }
 
-void right_rotate(bst_node_ptr lower_node) {
+static void right_rotate(bst_node_ptr lower_node) {
     if (lower_node == NULL)
         return;
     
