@@ -31,7 +31,7 @@ void bst_init(bst_t tree, size_t data_bytes,
 
 bst_node_ptr bst_search_nearest_node(bst_t tree, void *data);
 
-bst_node_ptr allocate_tree_node(bst_node_ptr parent, void *data);
+bst_node_ptr allocate_tree_node(bst_t tree, bst_node_ptr parent, void *data);
 
 bst_node_ptr bst_insert(bst_t tree, void *data);
 

@@ -47,12 +47,15 @@ bst_node_ptr bst_search_nearest_node(bst_t tree, void *data) {
     return previous_node;
 }
 
-bst_node_ptr allocate_tree_node(bst_node_ptr parent, void *data) {
+bst_node_ptr allocate_tree_node(bst_t tree, bst_node_ptr parent, void *data) {
     bst_node_ptr new_node = malloc(bst_node_size);
-    if (new_node == NULL)
+    if (tree == NULL or new_node == NULL)
         return NULL;
     
-    new_node->data = data;
+    new_node->data = malloc(tree->data_container_bytes);
+    if (new_node->data == NULL)
+        return NULL;
+    memcpy(new_node->data, data, tree->data_container_bytes);
     new_node->left_child = new_node->right_child = NULL;
     new_node->parent = parent;
 
@@ -66,7 +69,7 @@ bst_node_ptr bst_insert(bst_t tree, void *data) {
     bst_node_ptr new_node = NULL;
     bst_node_ptr nearest_node = bst_search_nearest_node(tree, data);
     if (nearest_node == NULL) {
-        new_node = allocate_tree_node(NULL, data);
+        new_node = allocate_tree_node(tree, NULL, data);
         return (tree->root = new_node);
     }
     
@@ -74,9 +77,9 @@ bst_node_ptr bst_insert(bst_t tree, void *data) {
     if (insertion_side == NONE)
         return nearest_node;
     else if (insertion_side == LEFT)
-        new_node = nearest_node->left_child = allocate_tree_node(nearest_node, data);
+        new_node = nearest_node->left_child = allocate_tree_node(tree, nearest_node, data);
     else
-        new_node = nearest_node->right_child = allocate_tree_node(nearest_node, data);
+        new_node = nearest_node->right_child = allocate_tree_node(tree, nearest_node, data);
 
     return new_node;
 }
