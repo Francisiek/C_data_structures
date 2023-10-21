@@ -39,4 +39,8 @@ side_t bst_node_side(bst_node_ptr node);
 
 void bst_splay(bst_t tree, void *data);
 
+size_t bst_height(bst_t tree);
+
+int bst_print_horizontal(bst_t tree);
+
 #endif

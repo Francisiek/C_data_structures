@@ -1,4 +1,5 @@
 #include <stdlib.h>
+#include <stdio.h>
 #include <string.h>
 #include <iso646.h>
 #include <stdbool.h>
@@ -160,6 +161,59 @@ void bst_splay(bst_t tree, void *data) {
         else
             right_rotate(current_node);
     }
+}
+
+/* TREE PRINTING FUNCTIONS */
+
+int max_int(int a, int b) {
+    if (a > b)
+        return a;
+    else
+        return b;
+}
+
+int _bst_height_rec(bst_node_ptr node) {
+    if (node == NULL)
+        return 0;
+
+    return max_int(_bst_height_rec(node->left_child), _bst_height_rec(node->right_child)) + 1;
+}
+
+
+size_t bst_height(bst_t tree) {
+    if (tree == NULL) {
+        return 0;
+    }
+
+    return _bst_height_rec(tree->root);
+}
+
+void print_spaces_and_node(bst_node_ptr node, size_t spaces_counter) {
+    for (size_t count = 0; count < spaces_counter; count++)
+            printf(" ");
+        printf("%d\n", (node->data) == NULL ? 0 : *(int*)node->data);
+}
+
+void _bst_print_horizontal_recursion(bst_node_ptr node, size_t spaces_counter) {
+    static const int spaces = 5;
+
+    if (node == NULL) {
+        return;
+    }
+
+    _bst_print_horizontal_recursion(node->left_child, spaces_counter + spaces);
+    print_spaces_and_node(node, spaces_counter);
+    _bst_print_horizontal_recursion(node->right_child, spaces_counter + spaces);
+
+}
+
+
+int bst_print_horizontal(bst_t tree) {
+    if (tree == NULL)
+        return 1;
+    
+    _bst_print_horizontal_recursion(tree->root, 0);
+    return 0;
 }
 
 /* DEBUG FUNCTIONS */
