@@ -1,4 +1,5 @@
 #include <stdlib.h>
+#include <stdbool.h>
 
 #ifndef _BST
 #define _BST
@@ -37,10 +38,18 @@ bst_node_ptr bst_insert(bst_t tree, void *data);
 
 side_t bst_node_side(bst_node_ptr node);
 
+void bst_left_rotate(bst_node_ptr lower_node);
+
+void bst_right_rotate(bst_node_ptr lower_node);
+
 void bst_splay(bst_t tree, void *data);
 
 size_t bst_height(bst_t tree);
 
 int bst_print_horizontal(bst_t tree);
+
+int bst_organisation_errors(bst_t tree);
+
+bool bst_is_organised(bst_t tree);
 
 #endif

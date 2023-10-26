@@ -97,39 +97,41 @@ side_t bst_node_side(bst_node_ptr node) {
         return NONE;
 }
 
-static void left_rotate(bst_node_ptr lower_node) {
-    if (lower_node == NULL)
+void bst_left_rotate(bst_node_ptr lower_node) {
+    if (lower_node == NULL or bst_node_side(lower_node) != RIGHT)
         return;
     
     bst_node_ptr old_left_child = lower_node->left_child;
     bst_node_ptr old_parent = lower_node->parent;
     bst_node_ptr old_grandma = (old_parent != NULL) ? old_parent->parent : NULL;
+    side_t old_parent_side = bst_node_side(old_parent);
 
     if (old_parent != NULL) {
         lower_node->left_child = old_parent;
         old_parent->parent = lower_node;
-        
+
         old_parent->right_child = old_left_child;
         if (old_left_child != NULL)
             old_left_child->parent = old_parent;
         
         lower_node->parent = old_grandma;
         if (old_grandma != NULL) {
-            if (bst_node_side(old_parent) == LEFT)
+            if (old_parent_side == LEFT)
                 old_grandma->left_child = lower_node;
-            else
+            else if (old_parent_side == RIGHT)
                 old_grandma->right_child = lower_node;
         }
     }
 }
 
-static void right_rotate(bst_node_ptr lower_node) {
-    if (lower_node == NULL)
+void bst_right_rotate(bst_node_ptr lower_node) {
+    if (lower_node == NULL or bst_node_side(lower_node) != LEFT)
         return;
     
     bst_node_ptr old_right_child = lower_node->right_child;
     bst_node_ptr old_parent = lower_node->parent;
     bst_node_ptr old_grandma = (old_parent != NULL) ? old_parent->parent : NULL;
+    side_t old_parent_side = bst_node_side(old_parent);
 
     if (old_parent != NULL) {
         lower_node->right_child = old_parent;
@@ -141,9 +143,9 @@ static void right_rotate(bst_node_ptr lower_node) {
         
         lower_node->parent = old_grandma;
         if (old_grandma != NULL) {
-            if (bst_node_side(old_parent) == LEFT)
+            if (old_parent_side == LEFT)
                 old_grandma->left_child = lower_node;
-            else
+            else if (old_parent_side == RIGHT)
                 old_grandma->right_child = lower_node;
         }
     }
@@ -157,9 +159,9 @@ void bst_splay(bst_t tree, void *data) {
     while (current_node != tree->root) {
         side_t current_node_side = bst_node_side(current_node);
         if (current_node_side == LEFT)
-            left_rotate(current_node);
+            bst_left_rotate(current_node);
         else
-            right_rotate(current_node);
+            bst_right_rotate(current_node);
     }
 }
 
@@ -201,9 +203,9 @@ void _bst_print_horizontal_recursion(bst_node_ptr node, size_t spaces_counter) {
         return;
     }
 
-    _bst_print_horizontal_recursion(node->left_child, spaces_counter + spaces);
-    print_spaces_and_node(node, spaces_counter);
     _bst_print_horizontal_recursion(node->right_child, spaces_counter + spaces);
+    print_spaces_and_node(node, spaces_counter);
+    _bst_print_horizontal_recursion(node->left_child, spaces_counter + spaces);
 
 }
 
@@ -218,3 +220,41 @@ int bst_print_horizontal(bst_t tree) {
 
 /* DEBUG FUNCTIONS */
 
+static bst_compare_function current_cmp_function;
+
+static int bst_organisation_errors_util(bst_node_ptr node) {
+    if (node == NULL)
+        return 0;
+
+    int sum = 0;
+    
+    if (node->left_child != NULL) {
+        side_t insertion_side = current_cmp_function(node->left_child->data, node->data);
+        if (insertion_side != LEFT)
+            sum++;
+    }
+
+    if (node->right_child != NULL) {
+        side_t insertion_side = current_cmp_function(node->right_child->data, node->data);
+        if (insertion_side != RIGHT)
+            sum++;
+    }
+
+    return sum + bst_organisation_errors_util(node->left_child) + 
+        bst_organisation_errors_util(node->right_child);
+}
+
+int bst_organisation_errors(bst_t tree) {
+    if (tree == NULL)
+        return false;
+
+    current_cmp_function = tree->compare_function;
+    int organisation_errors = bst_organisation_errors_util(tree->root);
+    current_cmp_function = NULL;
+
+    return organisation_errors;
+}
+
+bool bst_is_organised(bst_t tree) {
+    return bst_organisation_errors(tree) == 0;
+}
