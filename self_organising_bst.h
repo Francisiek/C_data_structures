@@ -38,9 +38,9 @@ bst_node_ptr bst_insert(bst_t tree, void *data);
 
 side_t bst_node_side(bst_node_ptr node);
 
-void bst_left_rotate(bst_node_ptr lower_node);
+void bst_left_rotate(bst_t tree, bst_node_ptr lower_node);
 
-void bst_right_rotate(bst_node_ptr lower_node);
+void bst_right_rotate(bst_t tree, bst_node_ptr lower_node);
 
 void bst_splay(bst_t tree, void *data);
 

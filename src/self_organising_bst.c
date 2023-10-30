@@ -8,6 +8,8 @@
 const size_t bst_size = sizeof(struct _BST_Tree);
 const size_t bst_node_size = sizeof(struct _BST_Node);
 
+#define DEBUG
+
 /* 
 compare_function:
 The first argument is the data that is going to be compared against
@@ -97,8 +99,8 @@ side_t bst_node_side(bst_node_ptr node) {
         return NONE;
 }
 
-void bst_left_rotate(bst_node_ptr lower_node) {
-    if (lower_node == NULL or bst_node_side(lower_node) != RIGHT)
+void bst_left_rotate(bst_t tree, bst_node_ptr lower_node) {
+    if (tree == NULL or lower_node == NULL or bst_node_side(lower_node) != RIGHT)
         return;
     
     bst_node_ptr old_left_child = lower_node->left_child;
@@ -120,12 +122,13 @@ void bst_left_rotate(bst_node_ptr lower_node) {
                 old_grandma->left_child = lower_node;
             else if (old_parent_side == RIGHT)
                 old_grandma->right_child = lower_node;
-        }
+        } else if (old_parent == tree->root)
+            tree->root = lower_node;
     }
 }
 
-void bst_right_rotate(bst_node_ptr lower_node) {
-    if (lower_node == NULL or bst_node_side(lower_node) != LEFT)
+void bst_right_rotate(bst_t tree, bst_node_ptr lower_node) {
+    if (tree == NULL or lower_node == NULL or bst_node_side(lower_node) != LEFT)
         return;
     
     bst_node_ptr old_right_child = lower_node->right_child;
@@ -147,7 +150,8 @@ void bst_right_rotate(bst_node_ptr lower_node) {
                 old_grandma->left_child = lower_node;
             else if (old_parent_side == RIGHT)
                 old_grandma->right_child = lower_node;
-        }
+        } else if (old_parent == tree->root)
+            tree->root = lower_node;
     }
 }
 
@@ -158,10 +162,16 @@ void bst_splay(bst_t tree, void *data) {
     bst_node_ptr current_node = bst_search_nearest_node(tree, data);
     while (current_node != tree->root) {
         side_t current_node_side = bst_node_side(current_node);
-        if (current_node_side == LEFT)
-            bst_left_rotate(current_node);
+        if (current_node_side == RIGHT)
+            bst_left_rotate(tree, current_node);
         else
-            bst_right_rotate(current_node);
+            bst_right_rotate(tree, current_node);
+        
+        #ifdef DEBUG
+            printf("step\n");
+            bst_print_horizontal(tree);
+            printf("is organised %d\n", bst_is_organised(tree));
+        #endif
     }
 }
 
