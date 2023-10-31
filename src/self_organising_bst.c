@@ -16,15 +16,15 @@ The first argument is the data that is going to be compared against
 the second argument which is the data inside a node.
 The result is sign of the difference of the first and the second argument
 (data - data_in_node). In other words:
-if first_argument < second_argument then result = -1 (LEFT)
-if first_argument > second_argument then result = 1 (RIGHT)
-if first_argument = second_argument then result = 0 (NONE)
+if first_argument < second_argument then result = -1 (bst_left)
+if first_argument > second_argument then result = 1 (bst_right)
+if first_argument = second_argument then result = 0 (bst_none)
 This behaviour is needed to properly organise this binary tree model.
-In this tree mode smaller child nodes goes on the left and bigger ones goes on the right.
+In this tree mode smaller child nodes goes on the bst_left and bigger ones goes on the bst_right.
 The same value is not inserted multiple times.
 */
-void bst_init(bst_t tree, size_t data_bytes, int (*compare_side_function)(void *data, void *node_data)) {
-    memcpy(tree, &(bst_t){{NULL, 0, data_bytes, compare_side_function}}, bst_size);
+void bst_init(bst_t tree, size_t data_bytes, bst_compare_function cmp) {
+    memcpy(tree, &(bst_t){{NULL, 0, data_bytes, cmp}}, bst_size);
 }
 
 bst_node_ptr bst_search_nearest_node(bst_t tree, void *data) {
@@ -39,9 +39,9 @@ bst_node_ptr bst_search_nearest_node(bst_t tree, void *data) {
         side_t search_side = compare(data, current_node->data);
         previous_node = current_node;
 
-        if (search_side == RIGHT)
+        if (search_side == bst_right)
             current_node = current_node->right_child;
-        else if (search_side == NONE)
+        else if (search_side == bst_none)
             return current_node;
         else
             current_node = current_node->left_child;
@@ -77,9 +77,9 @@ bst_node_ptr bst_insert(bst_t tree, void *data) {
     }
     
     side_t insertion_side = tree->compare_function(data, nearest_node->data);
-    if (insertion_side == NONE)
+    if (insertion_side == bst_none)
         return nearest_node;
-    else if (insertion_side == LEFT)
+    else if (insertion_side == bst_left)
         new_node = nearest_node->left_child = allocate_tree_node(tree, nearest_node, data);
     else
         new_node = nearest_node->right_child = allocate_tree_node(tree, nearest_node, data);
@@ -89,18 +89,18 @@ bst_node_ptr bst_insert(bst_t tree, void *data) {
 
 side_t bst_node_side(bst_node_ptr node) {
     if (node == NULL or node->parent == NULL)
-        return NONE;
+        return bst_none;
 
     if (node->parent->left_child == node)
-        return LEFT;
+        return bst_left;
     else if (node->parent->right_child == node)
-        return RIGHT;
+        return bst_right;
     else
-        return NONE;
+        return bst_none;
 }
 
-void bst_left_rotate(bst_t tree, bst_node_ptr lower_node) {
-    if (tree == NULL or lower_node == NULL or bst_node_side(lower_node) != RIGHT)
+void bst_rotate_node_left(bst_t tree, bst_node_ptr lower_node) {
+    if (tree == NULL or lower_node == NULL or bst_node_side(lower_node) != bst_right)
         return;
     
     bst_node_ptr old_left_child = lower_node->left_child;
@@ -118,17 +118,17 @@ void bst_left_rotate(bst_t tree, bst_node_ptr lower_node) {
         
         lower_node->parent = old_grandma;
         if (old_grandma != NULL) {
-            if (old_parent_side == LEFT)
+            if (old_parent_side == bst_left)
                 old_grandma->left_child = lower_node;
-            else if (old_parent_side == RIGHT)
+            else if (old_parent_side == bst_right)
                 old_grandma->right_child = lower_node;
         } else if (old_parent == tree->root)
             tree->root = lower_node;
     }
 }
 
-void bst_right_rotate(bst_t tree, bst_node_ptr lower_node) {
-    if (tree == NULL or lower_node == NULL or bst_node_side(lower_node) != LEFT)
+void bst_rotate_node_right(bst_t tree, bst_node_ptr lower_node) {
+    if (tree == NULL or lower_node == NULL or bst_node_side(lower_node) != bst_left)
         return;
     
     bst_node_ptr old_right_child = lower_node->right_child;
@@ -146,9 +146,9 @@ void bst_right_rotate(bst_t tree, bst_node_ptr lower_node) {
         
         lower_node->parent = old_grandma;
         if (old_grandma != NULL) {
-            if (old_parent_side == LEFT)
+            if (old_parent_side == bst_left)
                 old_grandma->left_child = lower_node;
-            else if (old_parent_side == RIGHT)
+            else if (old_parent_side == bst_right)
                 old_grandma->right_child = lower_node;
         } else if (old_parent == tree->root)
             tree->root = lower_node;
@@ -162,10 +162,10 @@ void bst_splay(bst_t tree, void *data) {
     bst_node_ptr current_node = bst_search_nearest_node(tree, data);
     while (current_node != tree->root) {
         side_t current_node_side = bst_node_side(current_node);
-        if (current_node_side == RIGHT)
-            bst_left_rotate(tree, current_node);
+        if (current_node_side == bst_right)
+            bst_rotate_node_left(tree, current_node);
         else
-            bst_right_rotate(tree, current_node);
+            bst_rotate_node_right(tree, current_node);
         
         #ifdef DEBUG
             printf("step\n");
@@ -216,7 +216,6 @@ void _bst_print_horizontal_recursion(bst_node_ptr node, size_t spaces_counter) {
     _bst_print_horizontal_recursion(node->right_child, spaces_counter + spaces);
     print_spaces_and_node(node, spaces_counter);
     _bst_print_horizontal_recursion(node->left_child, spaces_counter + spaces);
-
 }
 
 
@@ -240,13 +239,13 @@ static int bst_organisation_errors_util(bst_node_ptr node) {
     
     if (node->left_child != NULL) {
         side_t insertion_side = current_cmp_function(node->left_child->data, node->data);
-        if (insertion_side != LEFT)
+        if (insertion_side != bst_left)
             sum++;
     }
 
     if (node->right_child != NULL) {
         side_t insertion_side = current_cmp_function(node->right_child->data, node->data);
-        if (insertion_side != RIGHT)
+        if (insertion_side != bst_right)
             sum++;
     }
 
