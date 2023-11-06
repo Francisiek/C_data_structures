@@ -99,60 +99,52 @@ side_t bst_node_side(bst_node_ptr node) {
         return bst_none;
 }
 
-void bst_rotate_node_left(bst_t tree, bst_node_ptr lower_node) {
-    if (tree == NULL or lower_node == NULL or bst_node_side(lower_node) != bst_right)
-        return;
-    
+void bst_rotate_node_universal(bst_t tree, bst_node_ptr lower_node, side_t rotation_side) {
+    bst_node_ptr old_right_child = lower_node->right_child;
     bst_node_ptr old_left_child = lower_node->left_child;
     bst_node_ptr old_parent = lower_node->parent;
     bst_node_ptr old_grandma = (old_parent != NULL) ? old_parent->parent : NULL;
     side_t old_parent_side = bst_node_side(old_parent);
 
-    if (old_parent != NULL) {
+    if (old_parent == NULL)
+        return;
+
+    old_parent->parent = lower_node;
+
+    if (rotation_side == bst_left) {
         lower_node->left_child = old_parent;
-        old_parent->parent = lower_node;
 
         old_parent->right_child = old_left_child;
         if (old_left_child != NULL)
             old_left_child->parent = old_parent;
+    } else if (rotation_side == bst_right) {
+        lower_node->right_child = old_parent;
         
-        lower_node->parent = old_grandma;
-        if (old_grandma != NULL) {
-            if (old_parent_side == bst_left)
-                old_grandma->left_child = lower_node;
-            else if (old_parent_side == bst_right)
-                old_grandma->right_child = lower_node;
-        } else if (old_parent == tree->root)
-            tree->root = lower_node;
+        old_parent->left_child = old_right_child;
+        if (old_right_child != NULL)
+            old_right_child->parent = old_parent;
     }
+
+    lower_node->parent = old_grandma;
+    if (old_grandma != NULL) {
+        if (old_parent_side == bst_left)
+            old_grandma->left_child = lower_node;
+        else if (old_parent_side == bst_right)
+            old_grandma->right_child = lower_node;
+    } else if (old_parent == tree->root)
+        tree->root = lower_node;
+}
+
+void bst_rotate_node_left(bst_t tree, bst_node_ptr lower_node) {
+    if (tree == NULL or lower_node == NULL or bst_node_side(lower_node) != bst_right)
+        return;
+    bst_rotate_node_universal(tree, lower_node, bst_left);
 }
 
 void bst_rotate_node_right(bst_t tree, bst_node_ptr lower_node) {
     if (tree == NULL or lower_node == NULL or bst_node_side(lower_node) != bst_left)
         return;
-    
-    bst_node_ptr old_right_child = lower_node->right_child;
-    bst_node_ptr old_parent = lower_node->parent;
-    bst_node_ptr old_grandma = (old_parent != NULL) ? old_parent->parent : NULL;
-    side_t old_parent_side = bst_node_side(old_parent);
-
-    if (old_parent != NULL) {
-        lower_node->right_child = old_parent;
-        old_parent->parent = lower_node;
-        
-        old_parent->left_child = old_right_child;
-        if (old_right_child != NULL)
-            old_right_child->parent = old_parent;
-        
-        lower_node->parent = old_grandma;
-        if (old_grandma != NULL) {
-            if (old_parent_side == bst_left)
-                old_grandma->left_child = lower_node;
-            else if (old_parent_side == bst_right)
-                old_grandma->right_child = lower_node;
-        } else if (old_parent == tree->root)
-            tree->root = lower_node;
-    }
+    bst_rotate_node_universal(tree, lower_node, bst_right);
 }
 
 void bst_splay(bst_t tree, void *data) {
