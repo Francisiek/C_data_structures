@@ -3,7 +3,7 @@
 #include <string.h>
 #include <iso646.h>
 #include <stdbool.h>
-#include "../self_organising_bst.h"
+#include "../hdr/self_organising_bst.h"
 
 const size_t bst_size = sizeof(struct _BST_Tree);
 const size_t bst_node_size = sizeof(struct _BST_Node);
