@@ -26,6 +26,7 @@ extern const size_t bst_size;
 extern const size_t bst_node_size;
 
 typedef enum { bst_left = -1, bst_right = 1, bst_none = 0} side_t;
+enum { bst_less = -1, bst_greater = 1, bst_equal = 0};
 
 void bst_init(bst_t tree, size_t data_bytes, bst_compare_function cmp);
 
@@ -41,7 +42,7 @@ void bst_rotate_node_left(bst_t tree, bst_node_ptr lower_node);
 
 void bst_rotate_node_right(bst_t tree, bst_node_ptr lower_node);
 
-void bst_splay(bst_t tree, void *data);
+void bst_splay(bst_t tree, bst_node_ptr start_node);
 
 size_t bst_height(bst_t tree);
 

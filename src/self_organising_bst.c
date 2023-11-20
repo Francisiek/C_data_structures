@@ -21,10 +21,17 @@ if first_argument > second_argument then result = 1 (bst_right)
 if first_argument = second_argument then result = 0 (bst_none)
 This behaviour is needed to properly organise this binary tree model.
 In this tree mode smaller child nodes goes on the bst_left and bigger ones goes on the bst_right.
-The same value is not inserted multiple times.
+The same value is not intended to be inserted multiple times.
 */
 void bst_init(bst_t tree, size_t data_bytes, bst_compare_function cmp) {
     memcpy(tree, &(bst_t){{NULL, 0, data_bytes, cmp}}, bst_size);
+}
+
+void inline set_node_to_side_child(bst_node_ptr* node, side_t side) {
+    if (side == bst_left)
+        *node = (*node)->left_child;
+    else if (side == bst_right)
+        *node = (*node)->right_child;
 }
 
 bst_node_ptr bst_search_nearest_node(bst_t tree, void *data) {
@@ -34,7 +41,7 @@ bst_node_ptr bst_search_nearest_node(bst_t tree, void *data) {
     bst_compare_function compare = tree->compare_function;
     bst_node_ptr current_node = tree->root;
     bst_node_ptr previous_node = NULL;
-    
+
     while (current_node != NULL) {
         side_t search_side = compare(data, current_node->data);
         previous_node = current_node;
@@ -65,6 +72,30 @@ bst_node_ptr allocate_tree_node(bst_t tree, bst_node_ptr parent, void *data) {
     return new_node;
 }
 
+bst_node_ptr bst_insert_root(bst_t tree, void* new_root_data) {
+    bst_node_ptr new_root = allocate_tree_node(tree, NULL, new_root_data);
+    bst_node_ptr root = tree->root;
+    side_t insertion_side = tree->compare_function(root->data, new_root_data);
+
+    if (insertion_side == bst_left) {
+        new_root->left_child = root;
+        new_root->right_child = root->right_child;
+        if (root->right_child != NULL)
+            root->right_child->parent = new_root;
+        root->right_child = NULL;
+    } else if (insertion_side == bst_right) {
+        new_root->right_child = root;
+        new_root->left_child = root->left_child;
+        if (root->left_child != NULL)
+            root->left_child->parent = new_root;
+        root->left_child = NULL;
+    }
+    root->parent = new_root;
+    tree->root = new_root;
+
+    return new_root;
+}
+
 bst_node_ptr bst_insert(bst_t tree, void *data) {
     if (tree == NULL or data == NULL)
         return NULL;
@@ -76,13 +107,12 @@ bst_node_ptr bst_insert(bst_t tree, void *data) {
         return (tree->root = new_node);
     }
     
-    side_t insertion_side = tree->compare_function(data, nearest_node->data);
-    if (insertion_side == bst_none)
-        return nearest_node;
-    else if (insertion_side == bst_left)
-        new_node = nearest_node->left_child = allocate_tree_node(tree, nearest_node, data);
+    bst_splay(tree, nearest_node);
+    side_t compare_result = tree->compare_function(tree->root->data, data);
+    if (compare_result == bst_equal)
+        return tree->root;
     else
-        new_node = nearest_node->right_child = allocate_tree_node(tree, nearest_node, data);
+        new_node = bst_insert_root(tree, data);
 
     return new_node;
 }
@@ -147,11 +177,11 @@ void bst_rotate_node_right(bst_t tree, bst_node_ptr lower_node) {
     bst_rotate_node_universal(tree, lower_node, bst_right);
 }
 
-void bst_splay(bst_t tree, void *data) {
-    if (tree == NULL or data == NULL)
+void bst_splay(bst_t tree, bst_node_ptr start_node) {
+    if (tree == NULL)
         return;
 
-    bst_node_ptr current_node = bst_search_nearest_node(tree, data);
+    bst_node_ptr current_node = start_node;
     while (current_node != tree->root) {
         side_t current_node_side = bst_node_side(current_node);
         if (current_node_side == bst_right)
