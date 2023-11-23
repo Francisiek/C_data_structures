@@ -117,19 +117,19 @@ bst_node_ptr bst_insert(bst_t tree, void *data) {
     return new_node;
 }
 
-bst_node_ptr bst_search_last(bst_node_ptr node, side_t equity) {
-    if (node == NULL or equity == bst_equal)
+bst_node_ptr bst_search_last(bst_node_ptr node, side_t side) {
+    if (node == NULL or side == bst_equal)
         return NULL;
 
     bst_node_ptr prev_node = NULL;
     bst_node_ptr current_node = node;
 
-    if (equity == bst_greater) {         
+    if (side == bst_right) {         
         while (current_node != NULL) {
             prev_node = current_node;
             current_node = current_node->right_child;
         }
-    } else if (equity == bst_less) {
+    } else if (side == bst_left) {
         while (current_node != NULL) {
             prev_node = current_node;
             current_node = current_node->left_child;
@@ -139,21 +139,26 @@ bst_node_ptr bst_search_last(bst_node_ptr node, side_t equity) {
     return prev_node;
 }
 
-bst_node_ptr bst_move_last_to_root(bst_node_ptr root_node, side_t equity) {
+bst_node_ptr bst_move_last_to_root(bst_t tree, bst_node_ptr root_node, side_t equity) {
     bst_node_ptr node_to_move = bst_search_last(root_node, equity);
 
     if (equity == bst_less) {
         if (node_to_move->parent != NULL)
             node_to_move->parent->left_child = NULL;
-        node_to_move->right_child = root_node;
+        if (node_to_move != root_node)
+            node_to_move->right_child = root_node;
     } else if (equity == bst_greater) {
         if (node_to_move->parent != NULL)
-            node_to_move->parent->right_child;
-        node_to_move->left_child = root_node;
+            node_to_move->parent->right_child = NULL;
+        if (node_to_move != root_node)
+            node_to_move->left_child = root_node;
     }
+
     node_to_move->parent = root_node->parent;
     if (root_node->parent != NULL) {
-        side_t new_node_side = bst_node_side(node_to_move);
+        //side_t new_node_side = tree->compare_function(node_to_move->data, root_node->parent->data);
+        side_t new_node_side = bst_node_side(root_node);
+
         if (new_node_side == bst_left)
             node_to_move->parent->left_child = node_to_move;
         else if (new_node_side == bst_right)
@@ -165,17 +170,22 @@ bst_node_ptr bst_move_last_to_root(bst_node_ptr root_node, side_t equity) {
 }
 
 bst_node_ptr bst_connect_nodes(bst_t tree, bst_node_ptr first, bst_node_ptr second) {
-    if (first == NULL or second == NULL)
+    if (tree == NULL)
         return NULL;
-    
+        
+    if (first == NULL)
+        return second;
+    if (second == NULL)
+        return first;
+
     side_t compare_result = tree->compare_function(first->data, second->data);
     bst_node_ptr new_root;
 
     if (compare_result == bst_greater) {
-        new_root = bst_move_last_to_root(first, bst_less);
+        new_root = bst_move_last_to_root(tree, first, bst_less);
         new_root->left_child = second;
     } else if (compare_result == bst_less) {
-        new_root = bst_move_last_to_root(first, bst_greater);
+        new_root = bst_move_last_to_root(tree, first, bst_greater);
         new_root->right_child = second;
     } else if (compare_result == bst_equal) {
         // WTF
@@ -185,7 +195,19 @@ bst_node_ptr bst_connect_nodes(bst_t tree, bst_node_ptr first, bst_node_ptr seco
     return new_root;
 }
 
-bst_node_ptr bst_delete(bst_t tree, void *data) {
+void bst_free_node(bst_node_ptr node) {
+    if (node == NULL)
+        return;
+    free(node->data);
+    free(node);
+}
+
+void bst_delete_parent(bst_node_ptr node) {
+    if (node != NULL)
+        node->parent = NULL;
+}
+
+bst_node_ptr bst_delete_node(bst_t tree, void *data) {
     if (tree == NULL or data == NULL)
         return NULL;
     bst_node_ptr nearest_node = bst_search_nearest_node(tree, data);
@@ -194,9 +216,17 @@ bst_node_ptr bst_delete(bst_t tree, void *data) {
         return NULL;
     
     bst_splay(tree, nearest_node);
-    bst_node_ptr new_root = bst_connect_nodes(tree, tree->root->left_child, tree->root->right_child);
-    bst_delete_node(tree->root);
+
+    bst_node_ptr old_left_child = tree->root->left_child;
+    bst_node_ptr old_right_child = tree->root->right_child;
+
+    bst_free_node(tree->root);
+    bst_delete_parent(old_left_child);
+    bst_delete_parent(old_right_child);
+
+    bst_node_ptr new_root = bst_connect_nodes(tree, old_left_child, old_right_child);
     tree->root = new_root;
+    return new_root;
 }
 
 
@@ -269,7 +299,7 @@ void bst_splay(bst_t tree, bst_node_ptr start_node) {
         side_t current_node_side = bst_node_side(current_node);
         if (current_node_side == bst_right)
             bst_rotate_node_left(tree, current_node);
-        else
+        else if (current_node_side == bst_left)
             bst_rotate_node_right(tree, current_node);
         
         #ifdef DEBUG

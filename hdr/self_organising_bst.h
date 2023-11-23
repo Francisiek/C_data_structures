@@ -5,9 +5,9 @@
 #define _BST
 
 struct _BST_Node {
+    void *data;
     struct _BST_Node *parent;
     struct _BST_Node *left_child, *right_child;
-    void *data;
 };
 
 struct _BST_Tree {
@@ -25,8 +25,8 @@ typedef bst_node* bst_node_ptr;
 extern const size_t bst_size;
 extern const size_t bst_node_size;
 
-typedef enum { bst_left = -1, bst_right = 1, bst_none = 0} side_t;
-enum { bst_less = -1, bst_greater = 1, bst_equal = 0};
+typedef enum { bst_left = -1, bst_right = 1, bst_none = 0,
+                bst_less = -1, bst_greater = 1, bst_equal = 0} side_t;
 
 void bst_init(bst_t tree, size_t data_bytes, bst_compare_function cmp);
 
@@ -35,6 +35,8 @@ bst_node_ptr bst_search_nearest_node(bst_t tree, void *data);
 bst_node_ptr allocate_tree_node(bst_t tree, bst_node_ptr parent, void *data);
 
 bst_node_ptr bst_insert(bst_t tree, void *data);
+
+bst_node_ptr bst_delete_node(bst_t tree, void *data);
 
 side_t bst_node_side(bst_node_ptr node);
 
